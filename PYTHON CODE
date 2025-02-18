@@ -1,0 +1,346 @@
+import numpy as np
+import random
+
+# Initialize the distance matrix D
+def initialize_distance_matrix(num_cities, coordinates):
+    D = np.zeros((num_cities, num_cities))
+    for i in range(num_cities):
+        for j in range(i + 1, num_cities):
+            D[i][j] = np.linalg.norm(np.array(coordinates[i]) - np.array(coordinates[j]))
+            D[j][i] = D[i][j]
+    return D
+
+# Initialize pheromone matrix τ with small values
+def initialize_pheromone_matrix(num_cities):
+    return np.ones((num_cities, num_cities)) * 0.1  # Small initial pheromone value
+
+# Initialize the solution for each ant
+def initialize_ant(num_cities):
+    return {"tour": [], "visited": set(), "length": 0}
+
+# Choose next city based on pheromone levels and distance
+def choose_next_city(current_city, visited, pheromone_matrix, distance_matrix, alpha, beta):
+    pheromone = pheromone_matrix[current_city]
+    distance = distance_matrix[current_city]
+    
+    # Calculate desirability (pheromone^alpha * distance^(-beta))
+    desirability = (pheromone ** alpha) * ((1.0 / (distance + 1e-10)) ** beta)  # Added a small constant to avoid division by zero
+    
+    # Convert visited set to list and set desirability of visited cities to 0
+    visited_list = list(visited)
+    desirability[visited_list] = 0  # Don't visit already visited cities
+    
+    # Normalize the desirability to form probabilities
+    probabilities = desirability / np.sum(desirability)
+    
+    next_city = np.random.choice(len(probabilities), p=probabilities)
+    return next_city
+
+# Update pheromone values after each iteration
+def update_pheromones(pheromone_matrix, evaporation_rate, ants, num_cities):
+    # Evaporate pheromones
+    pheromone_matrix *= (1 - evaporation_rate)
+    
+    # Deposit pheromones based on ant tours
+    for ant in ants:
+        tour_length = ant['length']
+        pheromone_deposit = 1.0 / tour_length
+        for i in range(num_cities - 1):
+            pheromone_matrix[ant['tour'][i], ant['tour'][i+1]] += pheromone_deposit
+            pheromone_matrix[ant['tour'][i+1], ant['tour'][i]] += pheromone_deposit  # Since the TSP is symmetric
+
+# Main Ant Colony Optimization Algorithm
+def ant_colony_optimization(num_cities, coordinates, num_ants=50, max_iter=100, alpha=1.0, beta=2.0, evaporation_rate=0.1):
+    distance_matrix = initialize_distance_matrix(num_cities, coordinates)
+    pheromone_matrix = initialize_pheromone_matrix(num_cities)
+    
+    best_solution = None
+    best_length = float('inf')
+    
+    for iteration in range(max_iter):
+        ants = [initialize_ant(num_cities) for _ in range(num_ants)]
+        
+        for ant in ants:
+            start_city = random.randint(0, num_cities - 1)
+            ant['tour'] = [start_city]
+            ant['visited'] = {start_city}
+            current_city = start_city
+            
+            # Construct the tour for the ant
+            for _ in range(num_cities - 1):
+                next_city = choose_next_city(current_city, ant['visited'], pheromone_matrix, distance_matrix, alpha, beta)
+                ant['tour'].append(next_city)
+                ant['visited'].add(next_city)
+                current_city = next_city
+            
+            # Evaluate the tour length for the ant
+            tour_length = sum(distance_matrix[ant['tour'][i], ant['tour'][i+1]] for i in range(num_cities - 1))
+            tour_length += distance_matrix[ant['tour'][-1], ant['tour'][0]]  # Complete the cycle
+            
+            ant['length'] = tour_length
+            
+            # Update best solution found
+            if tour_length < best_length:
+                best_solution = ant['tour']
+                best_length = tour_length
+        
+        # Update pheromone matrix
+        update_pheromones(pheromone_matrix, evaporation_rate, ants, num_cities)
+        
+        # Optionally, check for convergence
+        # If convergence criteria are met (e.g., no improvement), exit early
+        if iteration > 10 and all(ant['length'] >= best_length for ant in ants):
+            break
+    
+    return best_solution, best_length
+
+# Example usage:
+num_cities = 5
+coordinates = [(0, 0), (1, 2), (3, 1), (5, 4), (6, 0)]  # Example coordinates of the cities
+
+best_solution, best_length = ant_colony_optimization(num_cities, coordinates)
+print(f"Best tour: {best_solution}")
+print(f"Best tour length: {best_length}")
+
+
+OUTPUT:
+
+
+import numpy as np
+import random
+
+# Initialize the distance matrix D
+def initialize_distance_matrix(num_cities, coordinates):
+    D = np.zeros((num_cities, num_cities))
+    for i in range(num_cities):
+        for j in range(i+1, num_cities):
+            D[i][j] = np.linalg.norm(np.array(coordinates[i]) - np.array(coordinates[j]))
+            D[j][i] = D[i][j]
+    return D
+
+# Initialize pheromone matrix τ with small values
+def initialize_pheromone_matrix(num_cities):
+    return np.ones((num_cities, num_cities)) * 0.1  # Small initial pheromone value
+
+# Initialize the solution for each ant
+def initialize_ant(num_cities):
+    return {"tour": [], "visited": set(), "length": 0}
+
+# Choose next city based on pheromone levels and distance
+def choose_next_city(current_city, visited, pheromone_matrix, distance_matrix, alpha, beta):
+    pheromone = pheromone_matrix[current_city]
+    distance = distance_matrix[current_city]
+    
+    # Calculate desirability (pheromone^alpha * distance^(-beta))
+    desirability = (pheromone ** alpha) * ((1.0 / (distance + 1e-10)) ** beta)  # Added a small constant to avoid division by zero
+    
+    desirability[visited] = 0  # Don't visit already visited cities
+    probabilities = desirability / np.sum(desirability)
+    
+    next_city = np.random.choice(len(probabilities), p=probabilities)
+    return next_city
+
+# Update pheromone values after each iteration
+def update_pheromones(pheromone_matrix, evaporation_rate, ants, num_cities):
+    # Evaporate pheromones
+    pheromone_matrix *= (1 - evaporation_rate)
+    
+    # Deposit pheromones based on ant tours
+    for ant in ants:
+        tour_length = ant['length']
+        pheromone_deposit = 1.0 / tour_length
+        for i in range(num_cities - 1):
+            pheromone_matrix[ant['tour'][i], ant['tour'][i+1]] += pheromone_deposit
+            pheromone_matrix[ant['tour'][i+1], ant['tour'][i]] += pheromone_deposit  # Since the TSP is symmetric
+
+# Main Ant Colony Optimization Algorithm
+def ant_colony_optimization(num_cities, coordinates, num_ants=50, max_iter=100, alpha=1.0, beta=2.0, evaporation_rate=0.1):
+    distance_matrix = initialize_distance_matrix(num_cities, coordinates)
+    pheromone_matrix = initialize_pheromone_matrix(num_cities)
+    
+    best_solution = None
+    best_length = float('inf')
+    
+    for iteration in range(max_iter):
+        ants = [initialize_ant(num_cities) for _ in range(num_ants)]
+        
+        for ant in ants:
+            start_city = random.randint(0, num_cities - 1)
+            ant['tour'] = [start_city]
+            ant['visited'] = {start_city}
+            current_city = start_city
+            
+            # Construct the tour for the ant
+            for _ in range(num_cities - 1):
+                next_city = choose_next_city(current_city, ant['visited'], pheromone_matrix, distance_matrix, alpha, beta)
+                ant['tour'].append(next_city)
+                ant['visited'].add(next_city)
+                current_city = next_city
+            
+            # Evaluate the tour length for the ant
+            tour_length = sum(distance_matrix[ant['tour'][i], ant['tour'][i+1]] for i in range(num_cities - 1))
+            tour_length += distance_matrix[ant['tour'][-1], ant['tour'][0]]  # Complete the cycle
+            
+            ant['length'] = tour_length
+            
+            # Update best solution found
+            if tour_length < best_length:
+                best_solution = ant['tour']
+                best_length = tour_length
+        
+        # Update pheromone matrix
+        update_pheromones(pheromone_matrix, evaporation_rate, ants, num_cities)
+        
+        # Optionally, check for convergence
+        # If convergence criteria are met (e.g., no improvement), exit early
+        if iteration > 10 and all(ant['length'] >= best_length for ant in ants):
+            break
+    
+    return best_solution, best_length
+
+# Example usage:
+num_cities = 5
+coordinates = [(0, 0), (1, 2), (3, 1), (5, 4), (6, 0)]  # Example coordinates of the cities
+
+best_solution, best_length = ant_colony_optimization(num_cities, coordinates)
+print(f"Best tour: {best_solution}")
+print(f"Best tour length: {best_length}")
+
+---------------------------------------------------------------------------
+IndexError                                Traceback (most recent call last)
+Cell In[90], line 97
+     94 num_cities = 5
+     95 coordinates = [(0, 0), (1, 2), (3, 1), (5, 4), (6, 0)]  # Example coordinates of the cities
+---> 97 best_solution, best_length = ant_colony_optimization(num_cities, coordinates)
+     98 print(f"Best tour: {best_solution}")
+     99 print(f"Best tour length: {best_length}")
+
+Cell In[90], line 67, in ant_colony_optimization(num_cities, coordinates, num_ants, max_iter, alpha, beta, evaporation_rate)
+     65 # Construct the tour for the ant
+     66 for _ in range(num_cities - 1):
+---> 67     next_city = choose_next_city(current_city, ant['visited'], pheromone_matrix, distance_matrix, alpha, beta)
+     68     ant['tour'].append(next_city)
+     69     ant['visited'].add(next_city)
+
+Cell In[90], line 29, in choose_next_city(current_city, visited, pheromone_matrix, distance_matrix, alpha, beta)
+     26 # Calculate desirability (pheromone^alpha * distance^(-beta))
+     27 desirability = (pheromone ** alpha) * ((1.0 / (distance + 1e-10)) ** beta)  # Added a small constant to avoid division by zero
+---> 29 desirability[visited] = 0  # Don't visit already visited cities
+     30 probabilities = desirability / np.sum(desirability)
+     32 next_city = np.random.choice(len(probabilities), p=probabilities)
+
+IndexError: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+
+
+
+
+
+
+
+import numpy as np
+import random
+
+# Initialize the distance matrix D
+def initialize_distance_matrix(num_cities, coordinates):
+    D = np.zeros((num_cities, num_cities))
+    for i in range(num_cities):
+        for j in range(i + 1, num_cities):
+            D[i][j] = np.linalg.norm(np.array(coordinates[i]) - np.array(coordinates[j]))
+            D[j][i] = D[i][j]
+    return D
+
+# Initialize pheromone matrix τ with small values
+def initialize_pheromone_matrix(num_cities):
+    return np.ones((num_cities, num_cities)) * 0.1  # Small initial pheromone value
+
+# Initialize the solution for each ant
+def initialize_ant(num_cities):
+    return {"tour": [], "visited": set(), "length": 0}
+
+# Choose next city based on pheromone levels and distance
+def choose_next_city(current_city, visited, pheromone_matrix, distance_matrix, alpha, beta):
+    pheromone = pheromone_matrix[current_city]
+    distance = distance_matrix[current_city]
+    
+    # Calculate desirability (pheromone^alpha * distance^(-beta))
+    desirability = (pheromone ** alpha) * ((1.0 / (distance + 1e-10)) ** beta)  # Added a small constant to avoid division by zero
+    
+    # Convert visited set to list and set desirability of visited cities to 0
+    visited_list = list(visited)
+    desirability[visited_list] = 0  # Don't visit already visited cities
+    
+    # Normalize the desirability to form probabilities
+    probabilities = desirability / np.sum(desirability)
+    
+    next_city = np.random.choice(len(probabilities), p=probabilities)
+    return next_city
+
+# Update pheromone values after each iteration
+def update_pheromones(pheromone_matrix, evaporation_rate, ants, num_cities):
+    # Evaporate pheromones
+    pheromone_matrix *= (1 - evaporation_rate)
+    
+    # Deposit pheromones based on ant tours
+    for ant in ants:
+        tour_length = ant['length']
+        pheromone_deposit = 1.0 / tour_length
+        for i in range(num_cities - 1):
+            pheromone_matrix[ant['tour'][i], ant['tour'][i+1]] += pheromone_deposit
+            pheromone_matrix[ant['tour'][i+1], ant['tour'][i]] += pheromone_deposit  # Since the TSP is symmetric
+
+# Main Ant Colony Optimization Algorithm
+def ant_colony_optimization(num_cities, coordinates, num_ants=50, max_iter=100, alpha=1.0, beta=2.0, evaporation_rate=0.1):
+    distance_matrix = initialize_distance_matrix(num_cities, coordinates)
+    pheromone_matrix = initialize_pheromone_matrix(num_cities)
+    
+    best_solution = None
+    best_length = float('inf')
+    
+    for iteration in range(max_iter):
+        ants = [initialize_ant(num_cities) for _ in range(num_ants)]
+        
+        for ant in ants:
+            start_city = random.randint(0, num_cities - 1)
+            ant['tour'] = [start_city]
+            ant['visited'] = {start_city}
+            current_city = start_city
+            
+            # Construct the tour for the ant
+            for _ in range(num_cities - 1):
+                next_city = choose_next_city(current_city, ant['visited'], pheromone_matrix, distance_matrix, alpha, beta)
+                ant['tour'].append(next_city)
+                ant['visited'].add(next_city)
+                current_city = next_city
+            
+            # Evaluate the tour length for the ant
+            tour_length = sum(distance_matrix[ant['tour'][i], ant['tour'][i+1]] for i in range(num_cities - 1))
+            tour_length += distance_matrix[ant['tour'][-1], ant['tour'][0]]  # Complete the cycle
+            
+            ant['length'] = tour_length
+            
+            # Update best solution found
+            if tour_length < best_length:
+                best_solution = ant['tour']
+                best_length = tour_length
+        
+        # Update pheromone matrix
+        update_pheromones(pheromone_matrix, evaporation_rate, ants, num_cities)
+        
+        # Optionally, check for convergence
+        # If convergence criteria are met (e.g., no improvement), exit early
+        if iteration > 10 and all(ant['length'] >= best_length for ant in ants):
+            break
+    
+    return best_solution, best_length
+
+# Example usage:
+num_cities = 5
+coordinates = [(0, 0), (1, 2), (3, 1), (5, 4), (6, 0)]  # Example coordinates of the cities
+
+best_solution, best_length = ant_colony_optimization(num_cities, coordinates)
+print(f"Best tour: {best_solution}")
+print(f"Best tour length: {best_length}")
+
+OUTPUT: 
+Best tour: [2, 4, 3, 1, 0]
+Best tour length: 17.155864878453787

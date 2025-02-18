@@ -1,0 +1,29 @@
+Initialize distance matrix D for all cities
+Initialize pheromone matrix τ with small values
+Initialize best_solution and best_length to infinity
+
+For iteration = 1 to max_iter:
+    Initialize solutions for all ants as empty
+    
+    For ant = 1 to num_ants:
+        Randomly choose a starting city for the ant
+        For step = 1 to num_cities - 1:
+            Choose the next city based on pheromone levels and distance
+            Add this city to the ant's tour
+            
+        Evaluate the tour length for the ant
+        If the ant's tour length is better than the best_solution:
+            Update best_solution and best_length
+    
+    Evaporate pheromones on all edges:
+        For each edge (i, j):
+            τ_ij = (1 - ρ) * τ_ij
+    
+    For each ant:
+        For each edge (i, j) in the ant's tour:
+            Deposit pheromone on the edge (i, j) proportional to the tour quality (inverse of tour length)
+    
+    If convergence criteria are met (best solution does not improve):
+        Exit the loop
+
+Return best_solution and best_length

@@ -1,0 +1,47 @@
+Ant Colony Optimization (ACO) for TSP
+Algorithm Steps:
+
+1) Initialization:
+
+-> Define parameters:
+
+* Number of ants m
+* Number of cities n
+* Number of iterations max_iter
+* Pheromone evaporation rate ρ
+* Pheromone influence α
+* Distance influence β
+*Initial pheromone levels τ_ij for all edges (set small positive values)
+
+->Generate the distance matrix D with distances between cities
+->Initialize the pheromone matrix τ with small values
+
+2) Main Loop (for each iteration):
+
+-> For each ant: 
+
+ *Randomly select a starting city
+ *Construct a complete tour by choosing the next city based on:
+       * Pheromone levels τ_ij
+       * Distances D_ij
+       * Apply a probability distribution to choose the next city (prefer cities with higher pheromone levels and shorter distances)
+
+-> Evaluate Solutions:
+
+   
+*For each ant's tour:
+    *Calculate the total length of the tour (distance traveled)
+    *If the tour length is shorter than the best found so far, update the best solution
+
+-> Pheromone Update:
+
+     *Evaporation: Reduce the pheromone level on all paths by ρ
+     *Deposit Pheromone: After all ants have constructed their tours, add pheromone to the paths taken by each ant, with more pheromone deposited on shorter tours
+
+-> Convergence Check:
+
+      If the best solution has not changed significantly over a number of iterations or the maximum iterations are reached, exit the loop
+
+-> Return the Best Solution:
+ 
+      Output the best tour and its length
